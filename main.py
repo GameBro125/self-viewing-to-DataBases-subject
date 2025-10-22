@@ -58,7 +58,7 @@ async def watch_video(page, video, my_channel_id):
     await asyncio.sleep(duration.total_seconds())  # имитация просмотра видео
 
     # 3. Оставить ответ на свой комментарий с временем окончания
-    end_comment = "Просмотр завершён: " + now_str()
+    end_comment = now_str()
     try:
         # Найти твой комментарий по id канала
         comment_selector = f"a[href='/channel/{my_channel_id}/']"
