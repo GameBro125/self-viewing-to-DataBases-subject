@@ -37,6 +37,8 @@ async def watch_video(page, video, my_channel_id):
         from datetime import timedelta
         return timedelta(hours=h, minutes=m, seconds=s)
 
+
+    
     link = video["Link"]
     duration = parse_duration(video["Duration"])
 
@@ -53,6 +55,17 @@ async def watch_video(page, video, my_channel_id):
     except Exception as e:
         print(f"[!] Не удалось оставить комментарий для {link}: {e}")
         return
+
+        # Получение названия видео
+    title_element = await page.query_selector(
+        ".video-pageinfo-container-module__videoTitleSection h1.video-pageinfo-container-module__videoTitleSectionHeader"
+    )
+    video_title = await title_element.inner_text() if title_element else "Unknown Title"
+
+    # Добавляем название в объект video
+    video["Title"] = video_title
+    print(f"Название видео: {video_title}")
+
 
     print(f"[+] Начат просмотр: {link}")
     await asyncio.sleep(duration.total_seconds())  # имитация просмотра видео
@@ -140,6 +153,7 @@ async def main():
         for video in videos:
             if video.get("isWatched", False):
                 continue
+            
 
             video["Start"] = now_str()
             try:
