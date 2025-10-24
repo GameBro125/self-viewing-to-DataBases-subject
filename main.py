@@ -160,8 +160,30 @@ def load_my_channel_id(file_path="user_info.txt"):
 
 
 async def main():
-    my_channel_id = load_my_channel_id()
+    from playwright.async_api import async_playwright
 
+    print("=== Rutube Watcher ===")
+    print("1. Авторизироваться в Rutube")
+    print("2. Просмотреть все видео")
+    print("3. Просмотреть часть видео")
+    choice = input("Выберите действие (1/2/3): ").strip()
+
+    # Авторизация
+    if choice == "1":
+        async with async_playwright() as p:
+            context = await p.chromium.launch_persistent_context(
+                user_data_dir=USER_DATA_DIR,
+                headless=False
+            )
+            page = context.pages[0] if context.pages else await context.new_page()
+            await page.goto("https://rutube.ru/")
+            print("[*] Выполните авторизацию в Rutube.")
+            input("[*] После авторизации нажмите Enter, чтобы закрыть браузер... ")
+            await context.close()
+        print("Авторизация завершена.")
+        return
+
+    my_channel_id = load_my_channel_id()
     if not my_channel_id:
         print("[!] ID канала не загружен. Выход.")
         exit(1)
@@ -172,6 +194,19 @@ async def main():
 
     with open(INPUT_JSON, "r", encoding="utf-8") as f:
         videos = json.load(f)
+
+    # Если выбрано "Просмотреть часть"
+    if choice == "3":
+        try:
+            limit = int(input("Введите количество видео для просмотра: "))
+            videos = [v for v in videos if not v.get("isWatched", False)][:limit]
+        except ValueError:
+            print("Некорректное значение, будет просмотрено всё доступное.")
+    elif choice == "2":
+        videos = [v for v in videos if not v.get("isWatched", False)]
+    else:
+        print("Некорректный выбор. Завершение.")
+        return
 
     async with async_playwright() as p:
         context = await p.chromium.launch_persistent_context(
@@ -199,7 +234,8 @@ async def main():
 
         await context.close()
 
-    print("Все видео обработаны. Прогресс сохранён.")
+    print("Все выбранные видео обработаны. Прогресс сохранён.")
+
 
 
 if __name__ == "__main__":
