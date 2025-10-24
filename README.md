@@ -48,6 +48,10 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+```cmd
+playwright install
+```
+
 ---
 
 ### 2. Настройка user_info.txt
