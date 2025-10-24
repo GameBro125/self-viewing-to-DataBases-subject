@@ -160,30 +160,8 @@ def load_my_channel_id(file_path="user_info.txt"):
 
 
 async def main():
-    from playwright.async_api import async_playwright
-
-    print("=== Rutube Watcher ===")
-    print("1. Авторизироваться в Rutube")
-    print("2. Просмотреть все видео")
-    print("3. Просмотреть часть видео")
-    choice = input("Выберите действие (1/2/3): ").strip()
-
-    # Авторизация
-    if choice == "1":
-        async with async_playwright() as p:
-            context = await p.chromium.launch_persistent_context(
-                user_data_dir=USER_DATA_DIR,
-                headless=False
-            )
-            page = context.pages[0] if context.pages else await context.new_page()
-            await page.goto("https://rutube.ru/")
-            print("[*] Выполните авторизацию в Rutube.")
-            input("[*] После авторизации нажмите Enter, чтобы закрыть браузер... ")
-            await context.close()
-        print("Авторизация завершена.")
-        return
-
     my_channel_id = load_my_channel_id()
+
     if not my_channel_id:
         print("[!] ID канала не загружен. Выход.")
         exit(1)
@@ -195,17 +173,37 @@ async def main():
     with open(INPUT_JSON, "r", encoding="utf-8") as f:
         videos = json.load(f)
 
-    # Если выбрано "Просмотреть часть"
+    print("=== Rutube Watcher ===")
+    print("1. Просмотреть все видео")
+    print("2. Просмотреть часть видео")
+    print("3. Авторизироваться в Rutube")
+    choice = input("Выберите действие (1/2/3): ").strip()
+
     if choice == "3":
-        try:
-            limit = int(input("Введите количество видео для просмотра: "))
-            videos = [v for v in videos if not v.get("isWatched", False)][:limit]
-        except ValueError:
-            print("Некорректное значение, будет просмотрено всё доступное.")
+        async with async_playwright() as p:
+            context = await p.chromium.launch_persistent_context(
+                user_data_dir=USER_DATA_DIR,
+                headless=False
+            )
+            page = context.pages[0] if context.pages else await context.new_page()
+            await page.goto("https://rutube.ru/")  # Страница входа
+            print("[+] Авторизуйтесь в открывшемся окне браузера")
+            input("Нажмите Enter после завершения авторизации...")
+            await context.close()
+        return  # Выход после авторизации
+
+    if choice == "1":
+        videos_to_watch = videos
     elif choice == "2":
-        videos = [v for v in videos if not v.get("isWatched", False)]
+        count = input("Сколько видео вы хотите посмотреть? Введите число: ").strip()
+        if not count.isdigit():
+            print("[!] Некорректное число, выход.")
+            return
+        count = int(count)
+        # Создаём срез для просмотра, но не трогаем исходный список
+        videos_to_watch = [v for v in videos if not v.get("isWatched", False)][:count]
     else:
-        print("Некорректный выбор. Завершение.")
+        print("[!] Некорректный выбор")
         return
 
     async with async_playwright() as p:
@@ -215,7 +213,7 @@ async def main():
         )
         page = context.pages[0] if context.pages else await context.new_page()
 
-        for video in videos:
+        for video in videos_to_watch:
             if video.get("isWatched", False):
                 continue
 
