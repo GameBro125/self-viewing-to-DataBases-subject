@@ -38,6 +38,13 @@ async def watch_video(page, video, my_channel_id):
     await page.goto(link)
     await asyncio.sleep(3)  # дождаться полной загрузки
 
+    # Проверка и закрытие pop-up, если он появился
+    popup_btn = await page.query_selector("button.wdp-onboardings-inventory-module__closeIcon")
+    if popup_btn:
+        print("[i] Обнаружен pop-up. Закрываю...")
+        await popup_btn.click()
+        await asyncio.sleep(1)
+    
     # 2. Оставить комментарий с началом просмотра
     start_comment = now_str()
     try:
